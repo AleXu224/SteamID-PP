@@ -1,55 +1,56 @@
 #pragma once
+#include "string"
 #include <cstdint>
 #include <format>
 #include <string_view>
-#include "string"
+
 
 struct SteamID {
-    enum class Universe : uint64_t {
-        INVALID = 0,
-        PUBLIC = 1,
-        BETA = 2,
-        INTERNAL = 3,
-        DEV = 4,
-    };
+	enum class Universe : uint64_t {
+		INVALID = 0,
+		PUBLIC = 1,
+		BETA = 2,
+		INTERNAL = 3,
+		DEV = 4,
+	};
 
-    enum class Type :uint64_t {
-        INVALID = 0,
-        INDIVIDUAL = 1,
-        MULTISEAT = 2,
-        GAMESERVER = 3,
-        ANON_GAMESERVER = 4,
-        PENDING = 5,
-        CONTENT_SERVER = 6,
-        CLAN = 7,
-        CHAT = 8,
-        P2P_SUPER_SEEDER = 9,
-        ANON_USER = 10,
-    };
+	enum class Type : uint64_t {
+		INVALID = 0,
+		INDIVIDUAL = 1,
+		MULTISEAT = 2,
+		GAMESERVER = 3,
+		ANON_GAMESERVER = 4,
+		PENDING = 5,
+		CONTENT_SERVER = 6,
+		CLAN = 7,
+		CHAT = 8,
+		P2P_SUPER_SEEDER = 9,
+		ANON_USER = 10,
+	};
 
-    struct Instance {
-        static constexpr uint64_t ALL = 0;
-        static constexpr uint64_t DESKTOP = 1;
-        static constexpr uint64_t CONSOLE = 2;
-        static constexpr uint64_t WEB = 4;
+	struct Instance {
+		static constexpr uint64_t ALL = 0;
+		static constexpr uint64_t DESKTOP = 1;
+		static constexpr uint64_t CONSOLE = 2;
+		static constexpr uint64_t WEB = 4;
 
-        Instance() = delete;
-    };
+		Instance() = delete;
+	};
 
-    struct Masks {
-        static constexpr uint64_t AccountIDMask = 0xFFFFFFFF;
-        static constexpr uint64_t AccountInstanceMask = 0x000FFFFF;
+	struct Masks {
+		static constexpr uint64_t AccountIDMask = 0xFFFFFFFF;
+		static constexpr uint64_t AccountInstanceMask = 0x000FFFFF;
 
-        Masks() = delete;
-    };
+		Masks() = delete;
+	};
 
-    struct ChatInstanceFlags {
-        static constexpr uint64_t Clan = (Masks::AccountIDMask + 1) >> 1;
-        static constexpr uint64_t Lobby = (Masks::AccountIDMask + 1) >> 2;
-        static constexpr uint64_t MMSLobby = (Masks::AccountInstanceMask + 1) >> 3;
+	struct ChatInstanceFlags {
+		static constexpr uint64_t Clan = (Masks::AccountIDMask + 1) >> 1;
+		static constexpr uint64_t Lobby = (Masks::AccountIDMask + 1) >> 2;
+		static constexpr uint64_t MMSLobby = (Masks::AccountInstanceMask + 1) >> 3;
 
-        ChatInstanceFlags() = delete;
-    };
+		ChatInstanceFlags() = delete;
+	};
 
 	static constexpr char TypeChar(const SteamID::Type &type) {
 		switch (type) {
@@ -110,16 +111,16 @@ struct SteamID {
 	}
 
 	Universe universe = Universe::INVALID;
-    Type type = Type::INVALID;
-    uint64_t instance = Instance::ALL;
-    uint64_t accountID = 0;
+	Type type = Type::INVALID;
+	uint64_t instance = Instance::ALL;
+	uint64_t accountID = 0;
 
-    constexpr SteamID() = default;
+	constexpr SteamID() = default;
 	constexpr SteamID(std::string_view id) {
 		// A SteamID3 can't have less than 7 characters
 		if (id.size() < 7) return;
 
-        // SteamID3
+		// SteamID3
 		if (id.front() == '[' && id.back() == ']') {
 			// [U:1:182986314]
 			if (id[1] < 'A' || id[1] > 'z') return;
@@ -135,13 +136,13 @@ struct SteamID {
 				if (c < '0' || c > '9') return;
 			}
 
-			universe = static_cast<Universe>(stoi(std::string(id.substr(3, 1))));
+			universe = static_cast<Universe>(constexpr_stoi(id.substr(3, 1)));
 			if (!hasInstance) {
-				accountID = stoi(std::string(id.substr(5, id.size() - 6)));
+				accountID = constexpr_stoi(id.substr(5, id.size() - 6));
 			} else {
 				const auto subStr = id.substr(5, id.size() - 6);
-				accountID = stoi(std::string(subStr.substr(0, subStr.find(':'))));
-				instance = stoi(std::string(subStr.substr(subStr.find(':') + 1)));
+				accountID = constexpr_stoi(subStr.substr(0, subStr.find(':')));
+				instance = constexpr_stoi(subStr.substr(subStr.find(':') + 1));
 			}
 
 			switch (id[1]) {
@@ -172,30 +173,30 @@ struct SteamID {
 
 		// SteamID2
 		if (id.substr(0, 6).compare("STEAM_") == 0) {
-            if (id[6] < '0' || id[6] > '5') return;
-            if (id[7] != ':') return;
-            if (id[8] < '0' || id[8] > '1') return;
-            if (id[9] != ':') return;
-            for (const auto &c: id.substr(10)) {
-                if (c < '0' || c > '9') return;
-            }
+			if (id[6] < '0' || id[6] > '5') return;
+			if (id[7] != ':') return;
+			if (id[8] < '0' || id[8] > '1') return;
+			if (id[9] != ':') return;
+			for (const auto &c: id.substr(10)) {
+				if (c < '0' || c > '9') return;
+			}
 
-            universe = static_cast<Universe>(stoi(std::string(id.substr(6, 1))));
-            if (universe == Universe::INVALID) universe = Universe::PUBLIC;
-            type = Type::INDIVIDUAL;
-            instance = Instance::DESKTOP;
-            accountID = (stoi(std::string(id.substr(10))) << 1) + stoi(std::string(id.substr(8, 1)));
-        }
+			universe = static_cast<Universe>(constexpr_stoi(id.substr(6, 1)));
+			if (universe == Universe::INVALID) universe = Universe::PUBLIC;
+			type = Type::INDIVIDUAL;
+			instance = Instance::DESKTOP;
+			accountID = (constexpr_stoi(id.substr(10)) << 1) + constexpr_stoi(id.substr(8, 1));
+		}
 
-        // SteamID64
-        for (const auto &c: id) {
-            if (c < '0' || c > '9') return;
-        }
-        uint64_t idInt = stoi(std::string(id));
-        universe = static_cast<Universe>(idInt >> 56);
-        type = static_cast<Type>((idInt >> 52) & 0xF);
-        instance = (idInt >> 32) & Masks::AccountInstanceMask;
-        accountID = idInt & Masks::AccountIDMask;
+		// SteamID64
+		for (const auto &c: id) {
+			if (c < '0' || c > '9') return;
+		}
+		uint64_t idInt = constexpr_stoi(id);
+		universe = static_cast<Universe>(idInt >> 56);
+		type = static_cast<Type>((idInt >> 52) & 0xF);
+		instance = (idInt >> 32) & Masks::AccountInstanceMask;
+		accountID = idInt & Masks::AccountIDMask;
 	}
 
 	constexpr SteamID(uint64_t id) : universe(static_cast<Universe>(id >> 56)),
@@ -236,15 +237,15 @@ struct SteamID {
 
 		const Universe usedUniverse = (!newerFormat && this->universe == Universe::PUBLIC) ? Universe::INVALID : this->universe;
 
-        // Sadly std::format isn't constexpr yet
-        std::string ret = "STEAM_";
-        ret += constexpr_to_string(static_cast<uint64_t>(usedUniverse));
-        ret += ':';
-        ret += constexpr_to_string(accountID & 1);
-        ret += ':';
-        ret += constexpr_to_string(accountID >> 1);
+		// Sadly std::format isn't constexpr yet
+		std::string ret = "STEAM_";
+		ret += constexpr_to_string(static_cast<uint64_t>(usedUniverse));
+		ret += ':';
+		ret += constexpr_to_string(accountID & 1);
+		ret += ':';
+		ret += constexpr_to_string(accountID >> 1);
 
-        return ret;
+		return ret;
 	}
 	[[nodiscard]] constexpr std::string getSteam2RenderedID(const bool &newerFormat = false) const {
 		return steam2(newerFormat);
@@ -272,18 +273,18 @@ struct SteamID {
 		// 				   static_cast<uint64_t>(universe),
 		// 				   accountID,
 		// 				   shouldRenderInstance ? std::format(":{}", instance) : "");
-        std::string ret = "[";
-        ret += typeChar;
-        ret += ":";
-        ret += constexpr_to_string(static_cast<uint64_t>(universe));
-        ret += ":";
-        ret += constexpr_to_string(accountID);
-        if (shouldRenderInstance) {
-            ret += ":";
-            ret += constexpr_to_string(instance);
-        }
-        ret += "]";
-        return ret;
+		std::string ret = "[";
+		ret += typeChar;
+		ret += ":";
+		ret += constexpr_to_string(static_cast<uint64_t>(universe));
+		ret += ":";
+		ret += constexpr_to_string(accountID);
+		if (shouldRenderInstance) {
+			ret += ":";
+			ret += constexpr_to_string(instance);
+		}
+		ret += "]";
+		return ret;
 	}
 	[[nodiscard]] constexpr std::string getSteam3RenderedID() const {
 		return steam3();
@@ -306,23 +307,23 @@ struct SteamID {
 	}
 
 private:
-    static constexpr uint64_t stoi(std::string_view num) {
-        uint64_t ret = 0;
-        for (const auto &c: num) {
-            if (c < '0' || c > '9') return ret;
-            ret = ret * 10 + (c - '0');
-        }
-        return ret;
-    }
+	static constexpr uint64_t constexpr_stoi(std::string_view num) {
+		uint64_t ret = 0;
+		for (const auto &c: num) {
+			if (c < '0' || c > '9') return ret;
+			ret = ret * 10 + (c - '0');
+		}
+		return ret;
+	}
 
-    static constexpr std::string constexpr_to_string(uint64_t num) {
-        if (num == 0) return "0";
-        std::string ret{};
-        while (num) {
-            ret += static_cast<char>('0' + static_cast<uint32_t>(num % 10));
-            num /= 10;
-        }
-        std::reverse(ret.begin(), ret.end());
-        return ret;
-    }
+	static constexpr std::string constexpr_to_string(uint64_t num) {
+		if (num == 0) return "0";
+		std::string ret{};
+		while (num) {
+			ret += static_cast<char>('0' + static_cast<uint32_t>(num % 10));
+			num /= 10;
+		}
+		std::reverse(ret.begin(), ret.end());
+		return ret;
+	}
 };
